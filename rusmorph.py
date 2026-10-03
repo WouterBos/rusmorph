@@ -2,16 +2,18 @@
 """
 rusmorph.py
 Russian Morphemic Analyzer with English Semantics.
-Combines A.N. Tikhonov's 96k-word Dictionary (SQLite) for 100% accurate segmentation
-with local Qwen 2.5 (via Ollama) for contextual English explanations of roots, affixes, and nuances.
+Combines Russian Dictionary (SQLite) with AI (via Ollama)
+for contextual English explanations of roots, affixes, and nuances.
 """
 
 import argparse
 import json
 import os
 import readline  # enables arrow keys and history in interactive input
+import socket
 import sqlite3
 import sys
+import threading
 import urllib.request
 import urllib.error
 
@@ -19,6 +21,12 @@ DEFAULT_MODEL = os.environ.get("RUSMORPH_MODEL", "qwen2.5:3b")
 DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DB_PATH = os.path.join(SCRIPT_DIR, "morphemes.db")
+DEFAULT_TIMEOUT = int(os.environ.get("RUSMORPH_TIMEOUT", "60"))
+TIMEOUT = DEFAULT_TIMEOUT
+
+# Terminal text formatting
+BOLD = "\033[1m"
+RESET = "\033[0m"
 
 TAG_MAP = {
     "PREF": "приставка (prefix)",
@@ -70,6 +78,7 @@ def stream_ollama_explanation(
     raw_breakdown: str = None,
     model: str = DEFAULT_MODEL,
     ollama_url: str = DEFAULT_OLLAMA_URL,
+    timeout: int = DEFAULT_TIMEOUT,
 ):
     """Stream explanation from local Ollama model."""
     if raw_breakdown:
@@ -77,22 +86,23 @@ def stream_ollama_explanation(
         system_prompt = (
             "You are an expert Russian lexicologist, etymologist, and English translator.\n"
             "Your task is to explain the semantic and morphological breakdown of Russian words for an English speaker.\n"
-            "Be precise, clear, and structured."
+            "Be terse, precise, clear, and structured."
         )
         user_prompt = f"""Word to analyze: "{word}"
 Verified Morphemes (Tikhonov Academic Standard):
 {structured_list}
 
-Analyze EVERY SINGLE morpheme listed above but ignore any postfix, infliction or ending. Focus on the root. The rest is less important.
+Analyze EVERY SINGLE morpheme listed above but ignore any postfix, inflection or ending. Focus on the root. The rest is less important.
 
 1. **Overall Word Meaning**:
    - **Definition**: English translation & part of speech.
    - **Nuance/Context**: How it is used.
 
-2. **Morpheme Breakdown (Cover all elements listed above)**:
+2. **Morpheme Breakdown**:
    - For EACH prefix: its meaning
    - For EACH root: core meaning, English translation, and key related words (e.g. готов -> готовить "to prepare", готовый "ready").
    - For EACH suffix: its meaning.
+   - IGNORE postfix, inflection, ending. Don't mention them at all.
 
 3. **Linguistic Synthesis**:
    - In 1-2 sentences, explain how these components combine logically to produce the word's meaning.
@@ -129,28 +139,72 @@ Please provide:
 
     api_endpoint = f"{ollama_url.rstrip('/')}/api/chat"
 
+    stop_spinner = threading.Event()
+    dots_printed = False
+
+    def spinner_worker():
+        nonlocal dots_printed
+        while not stop_spinner.wait(1.0):
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            dots_printed = True
+
+    spinner_thread = threading.Thread(target=spinner_worker, daemon=True)
+
+    def end_spinner():
+        if not stop_spinner.is_set():
+            stop_spinner.set()
+            if spinner_thread.is_alive():
+                spinner_thread.join()
+            if dots_printed:
+                if sys.stdout.isatty():
+                    sys.stdout.write("\r\033[K")
+                else:
+                    sys.stdout.write("\n")
+                sys.stdout.flush()
+
     try:
         req = urllib.request.Request(
             api_endpoint,
             data=payload,
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        print(f"{BOLD}🤖 AI ANALYSIS:{RESET}")
+        spinner_thread.start()
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             for line in resp:
                 if not line:
                     continue
                 chunk = json.loads(line.decode("utf-8"))
                 msg = chunk.get("message", {})
                 content = msg.get("content", "")
-                sys.stdout.write(content)
-                sys.stdout.flush()
+                if content:
+                    end_spinner()
+                    sys.stdout.write(content)
+                    sys.stdout.flush()
+        end_spinner()
         sys.stdout.write("\n")
-    except urllib.error.URLError as e:
-        print(
-            f"\n[!] Could not connect to Ollama at {ollama_url}. Is 'ollama serve' running?",
-            file=sys.stderr,
+    except (urllib.error.URLError, TimeoutError, socket.timeout) as e:
+        end_spinner()
+        is_timeout = (
+            isinstance(e, (TimeoutError, socket.timeout))
+            or isinstance(getattr(e, "reason", None), (TimeoutError, socket.timeout))
+            or "timed out" in str(e).lower()
         )
-        print(f"    Error details: {e}", file=sys.stderr)
+        if is_timeout:
+            print(
+                f"\n[!] Timeout has been reached (waited {timeout}s).",
+                file=sys.stderr,
+            )
+            print(f"    Error details: {e}", file=sys.stderr)
+        else:
+            print(
+                f"\n[!] Could not connect to Ollama at {ollama_url}. Is 'ollama serve' running?",
+                file=sys.stderr,
+            )
+            print(f"    Error details: {e}", file=sys.stderr)
+    finally:
+        end_spinner()
 
 
 def analyze_word(
@@ -158,6 +212,7 @@ def analyze_word(
     db_path: str = DEFAULT_DB_PATH,
     model: str = DEFAULT_MODEL,
     ollama_url: str = DEFAULT_OLLAMA_URL,
+    timeout: int = DEFAULT_TIMEOUT,
 ):
     word = word.strip()
     if not word:
@@ -167,22 +222,23 @@ def analyze_word(
 
     if raw_breakdown:
         summary_line, _ = format_raw_breakdown(raw_breakdown)
-        print(f"📖 Tikhonov Segmentation: {summary_line}\n")
+        print(f"{BOLD}📖 MORPHEMIC BREAKDOWN: {summary_line}{RESET}\n")
     else:
-        print("ℹ️  Word not in Tikhonov base dictionary (querying Qwen directly)...\n")
+        print(f"{BOLD}ℹ️  Word not in Tikhonov base dictionary (querying Qwen directly)...{RESET}\n")
 
     stream_ollama_explanation(
         word=word,
         raw_breakdown=raw_breakdown,
         model=model,
         ollama_url=ollama_url,
+        timeout=timeout,
     )
-    print(f"{'='*60}\n")
+    print(f"\n")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Russian Morphemic Analyzer with English Semantics (Tikhonov DB + Qwen)"
+        description="Russian Morphemic Analyzer with English Semantics"
     )
     parser.add_argument(
         "word",
@@ -204,6 +260,12 @@ def main():
         default=DEFAULT_OLLAMA_URL,
         help=f"Ollama URL (default: {DEFAULT_OLLAMA_URL})",
     )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=DEFAULT_TIMEOUT,
+        help=f"Ollama request timeout in seconds (default: {DEFAULT_TIMEOUT})",
+    )
 
     args = parser.parse_args()
 
@@ -221,6 +283,7 @@ def main():
             db_path=args.db,
             model=args.model,
             ollama_url=args.url,
+            timeout=args.timeout,
         )
     else:
         print("\n" + "=" * 60)
@@ -242,6 +305,7 @@ def main():
                     db_path=args.db,
                     model=args.model,
                     ollama_url=args.url,
+                    timeout=args.timeout,
                 )
             except (KeyboardInterrupt, EOFError):
                 print("\nExiting.")

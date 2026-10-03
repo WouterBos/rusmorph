@@ -4,12 +4,8 @@ Basic CLI tool that returns the morphemic breakdown of a given Russian word and 
 breakdown explains the composition of a word which can be helpful when learning a language. After installation, 
 the tool runs without requiring internet access.
 
-
-
-
-
-Local Russian morphemic analyzer. Uses A. N. Tikhonov's 96k-word dictionary (SQLite) for exact morpheme boundaries 
-and a local LLM (`qwen2.5:3b` via Ollama) to explain the English meanings of roots, prefixes, and suffixes.
+> [!IMPORTANT]
+> RusMorph is only tested on my laptop. Unfortunately there's no guarantee it will work on yours.
 
 ## Prerequisites
 
@@ -23,8 +19,8 @@ and a local LLM (`qwen2.5:3b` via Ollama) to explain the English meanings of roo
 
 It downloads the A. N. Tikhonov's 96k-word dictionary and creates a local database. When the user requests the 
 morphemic breakdown of a word, the script gets that morphemic breakdown from the database and will then pass it on to 
-AI to give additional explanation and translation. This script uses the LLM model Qwen2.5:3b as it's small enough for 
-most modern computers to run locally and works well with the cyrillic alphabet.
+AI get additional explanation and translation. This script uses the LLM model Qwen2.5:3b as it's small enough for 
+most modern computers to run locally.
 
 ## Usage
 
@@ -40,9 +36,16 @@ It downloads the Tikhonov dataset and compiles the local `morphemes.db` SQLite d
 
 ```bash
 ollama serve &
+ollama run qwen2.5:3b
 ```
 
-### 3. Analyze a Russian word and stream the English breakdown:
+### 3. **Run once**: Install the default LLM model
+
+```bash
+ollama run qwen2.5:3b
+```
+
+### 4. Analyze a Russian word and stream the English breakdown:
 
 ```bash
 # Single word
