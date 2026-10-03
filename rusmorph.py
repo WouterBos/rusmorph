@@ -83,17 +83,16 @@ def stream_ollama_explanation(
 Verified Morphemes (Tikhonov Academic Standard):
 {structured_list}
 
-Analyze EVERY SINGLE morpheme listed above. Do not skip any prefix, suffix, or root. Format your response cleanly:
+Analyze EVERY SINGLE morpheme listed above but ignore any postfix, infliction or ending. Focus on the root. The rest is less important.
 
 1. **Overall Word Meaning**:
    - **Definition**: English translation & part of speech.
    - **Nuance/Context**: How it is used.
 
 2. **Morpheme Breakdown (Cover all elements listed above)**:
-   - For EACH prefix: its meaning and how it alters the word (e.g. пере- = re-/over-, под- = sub-/additional).
+   - For EACH prefix: its meaning
    - For EACH root: core meaning, English translation, and key related words (e.g. готов -> готовить "to prepare", готовый "ready").
-   - For EACH suffix / linking vowel: exact grammatical role (e.g. noun nominalizer, diminutive, verbal aspect, adjective marker).
-   - For the ending / postfix: inflection (gender, case, number, or reflexive marker like -ся).
+   - For EACH suffix: its meaning.
 
 3. **Linguistic Synthesis**:
    - In 1-2 sentences, explain how these components combine logically to produce the word's meaning.
@@ -104,7 +103,7 @@ Analyze EVERY SINGLE morpheme listed above. Do not skip any prefix, suffix, or r
             "Your task is to identify the morphemes of a Russian word and explain their meanings in English."
         )
         user_prompt = f"""Analyze the Russian word "{word}".
-Note: This word was not found in the standard Tikhonov dictionary (it may be an inflected form, colloquialism, or neologism).
+Note: This word was not found in the dictionary (it may be an inflected form, colloquialism, or neologism).
 
 Please provide:
 1. **Overall Meaning**: English definition & part of speech.
@@ -163,10 +162,6 @@ def analyze_word(
     word = word.strip()
     if not word:
         return
-
-    print(f"\n{'='*60}")
-    print(f"  ANALYSIS FOR: {word}")
-    print(f"{'='*60}")
 
     raw_breakdown = get_tikhonov_breakdown(word, db_path)
 
