@@ -16,6 +16,7 @@ import sys
 import threading
 import urllib.request
 import urllib.error
+import unicodedata
 
 DEFAULT_MODEL = os.environ.get("RUSMORPH_MODEL", "qwen2.5:3b")
 DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
@@ -39,16 +40,52 @@ TAG_MAP = {
 }
 
 
+def remove_diacritics(text: str) -> str:
+    """Remove diacritical marks (e.g. stress marks like acute/grave accents) from text.
+
+    Preserves distinct Russian letters such as 'й' and 'ё'.
+    """
+    if not text:
+        return text
+
+    # Precomposed Cyrillic characters with grave accents (used for secondary stress)
+    grave_map = {
+        "\u0400": "\u0415",  # Ѐ -> Е
+        "\u0450": "\u0435",  # ѐ -> е
+        "\u040d": "\u0418",  # Ѝ -> И
+        "\u045d": "\u0438",  # ѝ -> и
+    }
+    for char, repl in grave_map.items():
+        if char in text:
+            text = text.replace(char, repl)
+
+    # Normalize to NFC so base letters like 'й' (U+0439) and 'ё' (U+0451)
+    # are composed and not represented as base letter + combining mark.
+    text = unicodedata.normalize("NFC", text)
+
+    # Filter out combining marks (Unicode category 'M*') and spacing accents
+    spacing_accents = {"\u00b4", "\u0060", "\u02ca", "\u02cb", "\u02c6", "\u02dc", "\u02c9"}
+    cleaned = [
+        char
+        for char in text
+        if not unicodedata.category(char).startswith("M") and char not in spacing_accents
+    ]
+    return "".join(cleaned)
+
+
 def get_tikhonov_breakdown(word: str, db_path: str):
     """Query SQLite database for exact Tikhonov breakdown."""
     if not os.path.exists(db_path):
         return None
 
-    word_clean = word.strip().lower()
+    word_clean = remove_diacritics(word).strip().lower()
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.execute("SELECT breakdown FROM morphemes WHERE word=?", (word_clean,))
     row = c.fetchone()
+    if not row and "ё" in word_clean:
+        c.execute("SELECT breakdown FROM morphemes WHERE word=?", (word_clean.replace("ё", "е"),))
+        row = c.fetchone()
     conn.close()
     return row[0] if row else None
 
@@ -210,7 +247,7 @@ def analyze_word(
     ollama_url: str = DEFAULT_OLLAMA_URL,
     timeout: int = DEFAULT_TIMEOUT,
 ):
-    word = word.strip()
+    word = remove_diacritics(word).strip()
     if not word:
         return
 
