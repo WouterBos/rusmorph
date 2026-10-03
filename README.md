@@ -42,7 +42,7 @@ It downloads the Tikhonov dataset and compiles the local `morphemes.db` SQLite d
 ollama serve &
 ```
 
-### 3. Analyze a Russian word and streams the English breakdown:
+### 3. Analyze a Russian word and stream the English breakdown:
 
 ```bash
 # Single word
@@ -56,7 +56,7 @@ Options:
 - `--model <name>`: Custom Ollama model (default: `qwen2.5:3b`)
 - `--db <path>`: Custom SQLite database path (default: `morphemes.db`)
 
-## Quick Access
+## Quick Access (optional)
 
 Add an alias to `~/.zshrc` (zshell) or `~/.bashrc` (bash):
 
