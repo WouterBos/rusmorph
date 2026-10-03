@@ -1,6 +1,15 @@
 # RusMorph
 
-Local Russian morphemic analyzer. Uses A. N. Tikhonov's 96k-word dictionary (SQLite) for exact morpheme boundaries and a local LLM (`qwen2.5:3b` via Ollama) to explain the English meanings of roots, prefixes, and suffixes.
+Basic CLI tool that returns the morphemic breakdown of a given Russian word and explains it in English. A Morphemic 
+breakdown explains the composition of a word which can be helpful when learning a language. After installation, 
+the tool runs without requiring internet access.
+
+
+
+
+
+Local Russian morphemic analyzer. Uses A. N. Tikhonov's 96k-word dictionary (SQLite) for exact morpheme boundaries 
+and a local LLM (`qwen2.5:3b` via Ollama) to explain the English meanings of roots, prefixes, and suffixes.
 
 ## Prerequisites
 
@@ -10,15 +19,25 @@ Local Russian morphemic analyzer. Uses A. N. Tikhonov's 96k-word dictionary (SQL
   ollama run qwen2.5:3b
   ```
 
+### How it works
+
+It downloads the A. N. Tikhonov's 96k-word dictionary and creates a local database. When the user requests the 
+morphemic breakdown of a word, the script gets that morphemic breakdown from the database and will then pass it on to 
+AI to give additional explanation and translation. This script uses the LLM model Qwen2.5:3b as it's small enough for 
+most modern computers to run locally and works well with the cyrillic alphabet.
+
 ## Usage
 
-### 1. **Run once**: `build_db.py`. It downloads the Tikhonov dataset and compiles the local `morphemes.db` SQLite database.
+### 1. **Run once**: create the database
+
 ```bash
 python3 build_db.py
 ```
 
-### 2. `rusmorph.py`
-Analyzes a Russian word and streams the English breakdown:
+It downloads the Tikhonov dataset and compiles the local `morphemes.db` SQLite database.
+
+### 2. Analyze a Russian word and streams the English breakdown:
+
 ```bash
 # Single word
 python3 rusmorph.py одуматься
@@ -33,12 +52,14 @@ Options:
 
 ## Quick Access
 
-Add an alias to `~/.zshrc` or `~/.bashrc`:
+Add an alias to `~/.zshrc` (zshell) or `~/.bashrc` (bash):
+
 ```bash
 alias rusmorph="python3 /home/wbo/rusmorph/rusmorph.py"
 ```
 
-Reload shell and use anywhere:
+Save the rc-file and reload the shell. Now you can run anywhere:
+
 ```bash
 rusmorph переподготовка
 ```
