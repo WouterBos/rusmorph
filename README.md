@@ -1,11 +1,9 @@
 # RusMorph
 
-Basic CLI tool that returns the morphemic breakdown of a given Russian word and explains it in English. A Morphemic 
-breakdown explains the composition of a word which can be helpful when learning a language. After installation, 
-the tool runs without requiring internet access.
+Basic CLI tool that returns the morphemic breakdown of a given Russian word and explains it in English. A Morphemic breakdown explains the composition of a word which can be helpful when learning a language. After installation, the tool runs without requiring internet access.
 
 > [!IMPORTANT]
-> RusMorph is only tested on my laptop. Unfortunately there's no guarantee it will work on yours.
+> RusMorph is only tested on my laptop (Linux). Unfortunately there's no guarantee it will work on yours.
 
 ## Prerequisites
 
@@ -14,13 +12,11 @@ the tool runs without requiring internet access.
   ```bash
   ollama run qwen2.5:3b
   ```
+- OS: Linux. Will probably work on MacOS and Windows WSL as well.
 
 ### How it works
 
-It downloads the A. N. Tikhonov's 96k-word dictionary and creates a local database. When the user requests the 
-morphemic breakdown of a word, the script gets that morphemic breakdown from the database and will then pass it on to 
-AI get additional explanation and translation. This script uses the LLM model Qwen2.5:3b as it's small enough for 
-most modern computers to run locally.
+It downloads the A. N. Tikhonov's 96k-word dictionary and creates a local database. When the user requests the morphemic breakdown of a word, the script gets that morphemic breakdown from the database and will then pass it on to AI get additional explanation and translation. This script uses the LLM model Qwen2.5:3b as it's small enough for most modern computers to run locally.
 
 ## Usage
 

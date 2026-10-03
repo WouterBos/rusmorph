@@ -192,11 +192,7 @@ Please provide:
             or "timed out" in str(e).lower()
         )
         if is_timeout:
-            print(
-                f"\n[!] Timeout has been reached (waited {timeout}s).",
-                file=sys.stderr,
-            )
-            print(f"    Error details: {e}", file=sys.stderr)
+            print(f"\n[!] Timeout has been reached (waited {timeout}s).")
         else:
             print(
                 f"\n[!] Could not connect to Ollama at {ollama_url}. Is 'ollama serve' running?",
