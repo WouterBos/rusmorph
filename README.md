@@ -36,7 +36,13 @@ python3 build_db.py
 
 It downloads the Tikhonov dataset and compiles the local `morphemes.db` SQLite database.
 
-### 2. Analyze a Russian word and streams the English breakdown:
+### 2. Run the Ollama server
+
+```bash
+ollama serve &
+```
+
+### 3. Analyze a Russian word and streams the English breakdown:
 
 ```bash
 # Single word
