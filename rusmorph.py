@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import readline  # enables arrow keys and history in interactive input
+import re
 import socket
 import sqlite3
 import sys
@@ -28,6 +29,18 @@ TIMEOUT = DEFAULT_TIMEOUT
 # Terminal text formatting
 BOLD = "\033[1m"
 RESET = "\033[0m"
+
+
+def format_terminal_markdown(text: str) -> str:
+    """Format markdown headings and bold text for terminal display."""
+    m = re.match(r"^(\s*)#{1,6}\s*(.*?)\s*$", text)
+    if m:
+        indent, content = m.groups()
+        content = content.rstrip("#").strip().replace("**", "")
+        return f"{indent}{BOLD}{content}{RESET}"
+    text = re.sub(r"\*\*(.*?)\*\*", rf"{BOLD}\1{RESET}", text)
+    return text.replace("**", "")
+
 
 TAG_MAP = {
     "PREF": "приставка (prefix)",
@@ -136,10 +149,10 @@ Analyze EVERY SINGLE morpheme listed above but ignore any postfix, inflection or
    - **Nuance/Context**: How it is used.
 
 2. **Morpheme Breakdown**:
-   - For EACH prefix: its meaning
+   - For EACH prefix: its meaning and how it alters the word (e.g. пере- = re-/over-, под- = sub-/additional).
    - For EACH root: core meaning, English translation, and key related words (e.g. готов -> готовить "to prepare", готовый "ready").
-   - For EACH suffix: its meaning.
-   - IGNORE postfix, inflection, ending. Don't mention them at all.
+   - For EACH suffix / linking vowel: exact grammatical role (e.g. noun nominalizer, diminutive, verbal aspect, adjective marker).
+   - For the ending / postfix: inflection (gender, case, number, or reflexive marker like -ся).
 
 3. **Linguistic Synthesis**:
    - In 1-2 sentences, explain how these components combine logically to produce the word's meaning.
@@ -169,7 +182,7 @@ Please provide:
             ],
             "stream": True,
             "options": {
-                "temperature": 0.2,  # Low temperature for factual linguistic consistency
+                "temperature": 0.3,  # Low temperature for factual linguistic consistency
             },
         }
     ).encode("utf-8")
@@ -209,6 +222,7 @@ Please provide:
         print(f"{BOLD}🤖 AI ANALYSIS:{RESET}")
         spinner_thread.start()
         with urllib.request.urlopen(req, timeout=timeout) as resp:
+            line_buffer = ""
             for line in resp:
                 if not line:
                     continue
@@ -217,8 +231,14 @@ Please provide:
                 content = msg.get("content", "")
                 if content:
                     end_spinner()
-                    sys.stdout.write(content)
-                    sys.stdout.flush()
+                    line_buffer += content
+                    while "\n" in line_buffer:
+                        curr_line, line_buffer = line_buffer.split("\n", 1)
+                        sys.stdout.write(format_terminal_markdown(curr_line) + "\n")
+                        sys.stdout.flush()
+            if line_buffer:
+                sys.stdout.write(format_terminal_markdown(line_buffer))
+                sys.stdout.flush()
         end_spinner()
         sys.stdout.write("\n")
     except (urllib.error.URLError, TimeoutError, socket.timeout) as e:
@@ -255,7 +275,7 @@ def analyze_word(
 
     if raw_breakdown:
         summary_line, _ = format_raw_breakdown(raw_breakdown)
-        print(f"{BOLD}📖 MORPHEMIC BREAKDOWN: {summary_line}{RESET}\n")
+        print(f"{BOLD}📖 MORPHEMIC BREAKDOWN:\n{summary_line}{RESET}\n")
     else:
         print(f"{BOLD}ℹ️  Word not in Tikhonov base dictionary (querying Qwen directly)...{RESET}\n")
 
