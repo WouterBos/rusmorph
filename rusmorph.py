@@ -28,17 +28,24 @@ TIMEOUT = DEFAULT_TIMEOUT
 
 # Terminal text formatting
 BOLD = "\033[1m"
+ITALIC = "\033[3m"
 RESET = "\033[0m"
 
 
 def format_terminal_markdown(text: str) -> str:
-    """Format markdown headings and bold text for terminal display."""
+    """Format markdown headings, bold, and italic text for terminal display."""
     m = re.match(r"^(\s*)#{1,6}\s*(.*?)\s*$", text)
     if m:
         indent, content = m.groups()
-        content = content.rstrip("#").strip().replace("**", "")
+        content = content.rstrip("#").strip().replace("**", "").replace("*", "")
         return f"{indent}{BOLD}{content}{RESET}"
+    # Bold + Italic (***text***)
+    text = re.sub(r"\*\*\*(.*?)\*\*\*", rf"{BOLD}{ITALIC}\1{RESET}", text)
+    # Bold (**text**)
     text = re.sub(r"\*\*(.*?)\*\*", rf"{BOLD}\1{RESET}", text)
+    # Italic (*text* or _text_)
+    text = re.sub(r"\*([^\s*](?:[^*]*?[^\s*])?)\*", rf"{ITALIC}\1{RESET}", text)
+    text = re.sub(r"(?<!\w)_([^\s_](?:[^_]*?[^\s_])?)_(?!\w)", rf"{ITALIC}\1{RESET}", text)
     return text.replace("**", "")
 
 
@@ -194,10 +201,12 @@ Please provide:
 
     def spinner_worker():
         nonlocal dots_printed
+        sys.stdout.write("Analyzing")
+        sys.stdout.flush()
+        dots_printed = True
         while not stop_spinner.wait(1.0):
             sys.stdout.write(".")
             sys.stdout.flush()
-            dots_printed = True
 
     spinner_thread = threading.Thread(target=spinner_worker, daemon=True)
 
