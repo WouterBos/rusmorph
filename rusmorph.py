@@ -142,7 +142,7 @@ def stream_ollama_explanation(
 Verified Morphemes (Tikhonov Academic Standard):
 {structured_list}
 
-Analyze EVERY SINGLE morpheme listed above but ignore any postfix, inflection or ending. Focus on the root. The rest is less important.
+Analyze EVERY SINGLE morpheme listed above but focus on the root. The rest is less important.
 
 1. **Overall Word Meaning**:
    - **Definition**: English translation & part of speech.
@@ -219,7 +219,6 @@ Please provide:
             data=payload,
             headers={"Content-Type": "application/json"},
         )
-        print(f"{BOLD}🤖 AI ANALYSIS:{RESET}")
         spinner_thread.start()
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             line_buffer = ""
@@ -275,9 +274,9 @@ def analyze_word(
 
     if raw_breakdown:
         summary_line, _ = format_raw_breakdown(raw_breakdown)
-        print(f"{BOLD}📖 MORPHEMIC BREAKDOWN:\n{summary_line}{RESET}\n")
+        print(f"{BOLD}{summary_line}{RESET}\n")
     else:
-        print(f"{BOLD}ℹ️  Word not in Tikhonov base dictionary (querying Qwen directly)...{RESET}\n")
+        print(f"{BOLD}(no morphemic breakdown found){RESET}\n")
 
     stream_ollama_explanation(
         word=word,
