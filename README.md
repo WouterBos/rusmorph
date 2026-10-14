@@ -41,7 +41,7 @@ ollama serve &
 ### 3. **Run once**: Install the default LLM model
 
 ```bash
-ollama run qwen2.5:3b
+ollama run mistral-nemo
 ```
 
 ### 4. Analyze a Russian word and stream the English breakdown:
@@ -55,7 +55,7 @@ python3 rusmorph.py
 ```
 
 Options:
-- `--model <name>`: Custom Ollama model (default: `qwen2.5:3b`)
+- `--model <name>`: Custom Ollama model (default: `mistral-nemo`)
 - `--db <path>`: Custom SQLite database path (default: `morphemes.db`)
 
 ## Quick Access (optional)

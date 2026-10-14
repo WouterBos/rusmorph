@@ -19,7 +19,7 @@ import urllib.request
 import urllib.error
 import unicodedata
 
-DEFAULT_MODEL = os.environ.get("RUSMORPH_MODEL", "qwen2.5:3b")
+DEFAULT_MODEL = os.environ.get("RUSMORPH_MODEL", "mistral-nemo")
 DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DB_PATH = os.path.join(SCRIPT_DIR, "morphemes.db")
