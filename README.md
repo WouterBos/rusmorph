@@ -8,7 +8,7 @@ Basic CLI tool that returns the morphemic breakdown of a given Russian word and 
 ## Prerequisites
 
 - **Python 3**
-- **Ollama** running with Qwen 2.5:3b:
+- **Ollama** running with `mistral-nemo`:
 - **Linux** but MacOS and Windows WSL will probably work as well.
 
 > [!WARNING]
@@ -18,7 +18,7 @@ Basic CLI tool that returns the morphemic breakdown of a given Russian word and 
 
 When installing RusMorph by running build_db.py, it downloads the A. N. Tikhonov's 96k-word dictionary and creates a local database.
 
-When the user requests the morphemic breakdown of a word by running rusmorph.py, the script gets that morphemic breakdown from the database and will use AI to explain that morphemic breakdown in English. This script uses the LLM model Qwen2.5:3b as it's small enough for most modern computers to run locally. Since you run AI locally, you don't need any subscription to use these models.
+When the user requests the morphemic breakdown of a word by running rusmorph.py, the script gets that morphemic breakdown from the database and will use AI to explain that morphemic breakdown in English. This script uses the LLM model `mistral-nemo` by default as it's small enough for most modern computers to run locally. Since you run AI locally, you don't need any subscription to use these models.
 
 ## Usage
 
